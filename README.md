@@ -10,7 +10,7 @@
 
 **需要注意特殊情况，若猜测中存在重复的clue，需人工甄别，如下图**
 
-![image-20240629184207411](https://raw.githubusercontent.com/ViceBeak/Handle-Solver/master/img/image-20240629184207411.png)
+![image-20240629190113538](https://raw.githubusercontent.com/ViceBeak/Handle-Solver/master/img/image-20240629190113538.png)
 
 对第三个字而言，声调2看似属于“猜测不存在”的情况，但事实上声调2存在于第四个字，因此第三个字声调的输入应该为“2 2”
 
