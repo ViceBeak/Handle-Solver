@@ -16,7 +16,7 @@
 
 ## Reference
 
-[[汉兜 - 汉字 Wordle (antfu.me)](https://handle.antfu.me/)]()
+[[汉兜 - 汉字 Wordle (antfu.me)](https://handle.antfu.me/)](https://handle.antfu.me/)
 
 [[汉兜 - 汉字 Wordle (无限) (bqx619.com)](https://handle.bqx619.com/)](https://handle.bqx619.com/)
 
