@@ -11,15 +11,65 @@ class Idiom:
 
 
 def read_dataset():
-    with open("data/answers_noted.json", "r") as dataset:
-        raw_idioms = json.load(dataset)
-    remains_label.config(text=f"剩余词语数量：{len(raw_idioms)}")
+    global idioms
+    with open("data/answers_noted.json", "r") as _dataset:
+        idioms = json.load(_dataset)
+    remains_label.config(text=f"剩余词语数量：{len(idioms)}")
+    calculate_frequency()
 
 
 def read_dataset_infinite():
-    with open("data_infinite/answers_infinite_extra_noted.json", "r") as dataset:
-        raw_idioms = json.load(dataset)
-    remains_label.config(text=f"剩余词语数量：{len(raw_idioms)}")
+    global idioms
+    with open("data_infinite/answers_infinite_extra_noted.json", "r") as _dataset:
+        idioms = json.load(_dataset)
+    remains_label.config(text=f"剩余词语数量：{len(idioms)}")
+    calculate_frequency()
+
+
+def calculate_frequency():
+    global idioms
+    character_frequency = {}
+    shengmu_frequency = {}
+    yunmu_frequency = {}
+    shengdiao_frequency = {}
+    for idiom in idioms:
+        for character in idiom:
+            if character not in character_frequency:
+                character_frequency[character] = 1 / len(idioms)
+            else:
+                character_frequency[character] += 1 / len(idioms)
+        for shengmu in idioms[idiom]["shengmu"]:
+            if not shengmu:
+                shengmu = "无声母"
+            if shengmu not in shengmu_frequency:
+                shengmu_frequency[shengmu] = 1 / len(idioms)
+            else:
+                shengmu_frequency[shengmu] += 1 / len(idioms)
+        for yunmu in idioms[idiom]["yunmu"]:
+            if yunmu not in yunmu_frequency:
+                yunmu_frequency[yunmu] = 1 / len(idioms)
+            else:
+                yunmu_frequency[yunmu] += 1 / len(idioms)
+        for shengdiao in idioms[idiom]["shengdiao"]:
+            if not shengdiao:
+                shengdiao = "无声调"
+            if shengdiao not in shengdiao_frequency:
+                shengdiao_frequency[shengdiao] = 1 / len(idioms)
+            else:
+                shengdiao_frequency[shengdiao] += 1 / len(idioms)
+
+    character_count = [(key, round(value, 4)) for key, value in character_frequency.items()]
+    character_count.sort(key=lambda x: x[1], reverse=True)
+    frequency_character.config(text=f"{character_count[:10]}")
+    shengmu_count = [(key, round(value, 4)) for key, value in shengmu_frequency.items()]
+    shengmu_count.sort(key=lambda x: x[1], reverse=True)
+    frequency_shengmu.config(text=f"{shengmu_count[:10]}")
+    yunmu_count = [(key, round(value, 4)) for key, value in yunmu_frequency.items()]
+    yunmu_count.sort(key=lambda x: x[1], reverse=True)
+    frequency_yunmu.config(text=f"{yunmu_count[:10]}")
+    shengdiao_count = [(key, round(value, 4)) for key, value in shengdiao_frequency.items()]
+    shengdiao_count.sort(key=lambda x: x[1], reverse=True)
+    frequency_shengdiao.config(text=f"{shengdiao_count}")
 
 
 if __name__ == "__main__":
@@ -27,6 +77,10 @@ if __name__ == "__main__":
     root.title("汉兜求解器")
     style = ttk.Style()
     style.configure("Pixel.TEntry", height=50)
+
+    # 默认模式为标准模式
+    with open("data/answers_noted.json", "r") as dataset:
+        idioms = json.load(dataset)
 
     # 菜单，选择游戏模式
     menubar = tk.Menu(root)
@@ -95,7 +149,7 @@ if __name__ == "__main__":
     remains_frame = tk.Frame(second_frame)
     remains_frame.grid(row=0, columnspan=3, padx=2, pady=2)
 
-    remains_label = tk.Label(remains_frame, text="请先选择游戏模式", font=("微软雅黑", 10))
+    remains_label = tk.Label(remains_frame, text=f"剩余词语数量：{len(idioms)}", font=("微软雅黑", 10))
     remains_label.grid()
 
     # 4个线索名称
@@ -109,8 +163,16 @@ if __name__ == "__main__":
     frequency_frame = tk.Frame(second_frame, bd=2, relief="groove")
     frequency_frame.grid(row=1, column=1, padx=2, pady=2)
     tk.Label(frequency_frame, text="最高频率").grid(row=0, sticky="we")
-    for i in range(4):
-        tk.Label(frequency_frame, text="", bg="white", width=118, bd=2, relief="groove").grid(row=i + 1)
+    frequency_character = tk.Label(frequency_frame, text="", bg="white", width=118, bd=2, relief="groove")
+    frequency_character.grid(row=1)
+    frequency_shengmu = tk.Label(frequency_frame, text="", bg="white", width=118, bd=2, relief="groove")
+    frequency_shengmu.grid(row=2)
+    frequency_yunmu = tk.Label(frequency_frame, text="", bg="white", width=118, bd=2, relief="groove")
+    frequency_yunmu.grid(row=3)
+    frequency_shengdiao = tk.Label(frequency_frame, text="", bg="white", width=118, bd=2, relief="groove")
+    frequency_shengdiao.grid(row=4)
+
+    calculate_frequency()
 
     # 权重框架
     weight_frame = tk.Frame(second_frame, bd=2, relief="groove")
