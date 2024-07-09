@@ -286,7 +286,8 @@ if __name__ == "__main__":
     second_button_frame.grid(row=2, columnspan=3, padx=3, pady=3)
 
     # 第二部分的确定按钮
-    second_confirm_button = tk.Button(second_button_frame, width=5, text="确定", relief="groove")
+    second_confirm_button = tk.Button(second_button_frame, width=5, text="确定", relief="groove",
+                                      command=calculate_recommendations)
     second_confirm_button.grid(row=0, column=0, padx=3, pady=3)
 
     # 第三部分（推荐输出）框架
