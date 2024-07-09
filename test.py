@@ -3,13 +3,6 @@ import json
 from tkinter import ttk
 
 
-class Idiom:
-    def __init__(self, _dict):
-        self.shengmu = _dict["shengmu"]
-        self.yunmu = _dict["yunmu"]
-        self.shengdiao = _dict["shengdiao"]
-
-
 def read_dataset():
     global idioms
     with open("data/answers_noted.json", "r") as _dataset:
@@ -110,40 +103,60 @@ def calculate_recommendations():
         aggressive_scores[idiom] = conservative_scores[idiom] = 0
         shown = {}
         for character in idiom:
-            if character in character_score and character not in shown:
-                aggressive_scores[idiom] += character_score[character] * int(weight_entries[0].get())
+            if character in character_score:
+                punishment = 1
+                if character in shown:
+                    punishment = 1 / (4 ** shown[character])
+                else:
+                    shown[character] = 0
+                aggressive_scores[idiom] += character_score[character] * int(weight_entries[0].get()) * punishment
                 if idiom in idioms:
-                    conservative_scores[idiom] += character_score[character] * int(weight_entries[0].get())
-                shown[character] = True
+                    conservative_scores[idiom] += character_score[character] * int(weight_entries[0].get()) * punishment
+                shown[character] += 1
         for shengmu in all_idioms[idiom]["shengmu"]:
             if not shengmu:
                 shengmu = "无声母"
-            if shengmu in shengmu_score and shengmu not in shown:
-                aggressive_scores[idiom] += shengmu_score[shengmu] * int(weight_entries[1].get())
+            if shengmu in shengmu_score:
+                punishment = 1
+                if shengmu in shown:
+                    punishment = 1 / (4 ** shown[shengmu])
+                else:
+                    shown[shengmu] = 0
+                aggressive_scores[idiom] += shengmu_score[shengmu] * int(weight_entries[1].get()) * punishment
                 if idiom in idioms:
-                    conservative_scores[idiom] += shengmu_score[shengmu] * int(weight_entries[1].get())
-                shown[shengmu] = True
+                    conservative_scores[idiom] += shengmu_score[shengmu] * int(weight_entries[1].get()) * punishment
+                shown[shengmu] += 1
         for yunmu in all_idioms[idiom]["yunmu"]:
-            if yunmu in yunmu_score and yunmu not in shown:
-                aggressive_scores[idiom] += yunmu_score[yunmu] * int(weight_entries[2].get())
+            if yunmu in yunmu_score:
+                punishment = 1
+                if yunmu in shown:
+                    punishment = 1 / (4 ** shown[yunmu])
+                else:
+                    shown[yunmu] = 0
+                aggressive_scores[idiom] += yunmu_score[yunmu] * int(weight_entries[2].get()) * punishment
                 if idiom in idioms:
-                    conservative_scores[idiom] += yunmu_score[yunmu] * int(weight_entries[2].get())
-                shown[yunmu] = True
+                    conservative_scores[idiom] += yunmu_score[yunmu] * int(weight_entries[2].get()) * punishment
+                shown[yunmu] += 1
         for shengdiao in all_idioms[idiom]["shengdiao"]:
             if not shengdiao:
                 shengdiao = "无声调"
-            if shengdiao in shengdiao_score and shengdiao not in shown:
-                aggressive_scores[idiom] += shengdiao_score[shengdiao] * int(weight_entries[3].get())
+            if shengdiao in shengdiao_score:
+                punishment = 1
+                if shengdiao in shown:
+                    punishment = 1 / (4 ** shown[shengdiao])
+                else:
+                    shown[shengdiao] = 0
+                aggressive_scores[idiom] += shengdiao_score[shengdiao] * int(weight_entries[3].get()) * punishment
                 if idiom in idioms:
-                    conservative_scores[idiom] += shengdiao_score[shengdiao] * int(weight_entries[3].get())
-                shown[shengdiao] = True
+                    conservative_scores[idiom] += shengdiao_score[shengdiao] * int(weight_entries[3].get()) * punishment
+                shown[shengdiao] += 1
 
     aggressive_recommendations = [(key, round(value, 3)) for key, value in aggressive_scores.items()]
     aggressive_recommendations.sort(key=lambda x: x[1], reverse=True)
-    aggressive_label.config(text=f"{aggressive_recommendations[:5]}")
+    aggressive_label.config(text=f"{aggressive_recommendations[:6]}")
     conservative_recommendations = [(key, round(value, 3)) for key, value in conservative_scores.items()]
     conservative_recommendations.sort(key=lambda x: x[1], reverse=True)
-    conservative_label.config(text=f"{conservative_recommendations[:5]}")
+    conservative_label.config(text=f"{conservative_recommendations[:6]}")
 
 
 if __name__ == "__main__":
@@ -261,9 +274,12 @@ if __name__ == "__main__":
 
     for i in range(4):
         entry = ttk.Entry(weight_frame, width=5, style="Pixel.TEntry")
-        entry.insert(0, str(40 - i * 10))
         entry.grid(row=i + 1)
         weight_entries.append(entry)
+    weight_entries[0].insert(0, str(50))
+    weight_entries[1].insert(0, str(20))
+    weight_entries[2].insert(0, str(20))
+    weight_entries[3].insert(0, str(10))
 
     # 第二部分的按钮框架
     second_button_frame = tk.Frame(second_frame)
