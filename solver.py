@@ -1,30 +1,31 @@
 import tkinter as tk
 import json
+import copy
 from tkinter import ttk
 
 
 def read_dataset():
-    global idioms
+    global original_idioms, idioms
     with open("data/answers_noted.json", "r") as _dataset:
-        idioms = json.load(_dataset)
-    remains_label.config(text=f"剩余词语数量：{len(idioms)}")
-    calculate_frequency()
-    calculate_recommendations()
+        original_idioms = json.load(_dataset)
+    remains_label.config(text=f"剩余词语数量：{len(original_idioms)}/{len(original_idioms)}")
+    clean_entries()
 
 
 def read_dataset_infinite():
-    global idioms
+    global original_idioms, idioms
     with open("data_infinite/answers_infinite_extra_noted.json", "r") as _dataset:
-        idioms = json.load(_dataset)
-    remains_label.config(text=f"剩余词语数量：{len(idioms)}")
-    calculate_frequency()
-    calculate_recommendations()
+        original_idioms = json.load(_dataset)
+    remains_label.config(text=f"剩余词语数量：{len(original_idioms)}/{len(original_idioms)}")
+    clean_entries()
 
 
 def min_max_normalize(data):
     second_items = [x[1] for x in data]
     min_val = min(second_items)
     max_val = max(second_items)
+    if min_val == max_val:
+        return [(x[0], 1) for x in data]
     a, b = 0, 1
 
     def normalize(value):
@@ -88,10 +89,12 @@ def calculate_frequency():
     shengdiao_count_normalized = min_max_normalize(shengdiao_count)
     frequency_shengdiao.config(text=f"{shengdiao_count}")
 
+    remains_label.config(text=f"剩余词语数量：{len(idioms)}/{len(original_idioms)}")
+
 
 def calculate_recommendations():
     global idioms, all_idioms, character_count_normalized, shengmu_count_normalized, yunmu_count_normalized, \
-        shengdiao_count_normalized, weight_entries
+        shengdiao_count_normalized
     conservative_scores = {}
     aggressive_scores = {}
     character_score = {x[0]: x[1] for x in character_count_normalized}
@@ -151,12 +154,82 @@ def calculate_recommendations():
                     conservative_scores[idiom] += shengdiao_score[shengdiao] * int(weight_entries[3].get()) * punishment
                 shown[shengdiao] += 1
 
-    aggressive_recommendations = [(key, round(value, 3)) for key, value in aggressive_scores.items()]
-    aggressive_recommendations.sort(key=lambda x: x[1], reverse=True)
-    aggressive_label.config(text=f"{aggressive_recommendations[:6]}")
-    conservative_recommendations = [(key, round(value, 3)) for key, value in conservative_scores.items()]
-    conservative_recommendations.sort(key=lambda x: x[1], reverse=True)
-    conservative_label.config(text=f"{conservative_recommendations[:6]}")
+    aggressive_recommendations = [(key, round(value, 3)) for key, value in aggressive_scores.items() if value]
+    if aggressive_recommendations:
+        aggressive_recommendations.sort(key=lambda x: x[1], reverse=True)
+        aggressive_label.config(text=f"{aggressive_recommendations[:6]}")
+    else:
+        aggressive_label.config(text="逆天！剩余词典为空！")
+    conservative_recommendations = [(key, round(value, 3)) for key, value in conservative_scores.items() if value]
+    if conservative_recommendations:
+        conservative_recommendations.sort(key=lambda x: x[1], reverse=True)
+        conservative_label.config(text=f"{conservative_recommendations[:6]}")
+    else:
+        conservative_label.config(text="逆天！剩余词典为空！")
+
+
+def collect_entries():
+    global original_idioms, idioms
+    idioms = copy.deepcopy(original_idioms)
+    for index, _entry in enumerate(entries_correct[0]):
+        if _entry.get():
+            for idiom in list(idioms.keys()):
+                if idiom[index] != _entry.get():
+                    idioms.pop(idiom)
+    for clue_index, _clue in [(1, "shengmu"), (2, "yunmu"), (3, "shengdiao")]:
+        for index, _entry in enumerate(entries_correct[clue_index]):
+            if _entry.get():
+                for idiom in list(idioms.keys()):
+                    if idioms[idiom][_clue][index] != _entry.get():
+                        idioms.pop(idiom)
+
+    for index, _entry in enumerate(entries_exist[0]):
+        if _entry.get():
+            inputs = _entry.get().split(" ")
+            for _input in inputs:
+                for idiom in list(idioms.keys()):
+                    if idiom[index] == _input or _input not in idiom:
+                        idioms.pop(idiom)
+    for clue_index, _clue in [(1, "shengmu"), (2, "yunmu"), (3, "shengdiao")]:
+        for index, _entry in enumerate(entries_exist[clue_index]):
+            if _entry.get():
+                inputs = _entry.get().split(" ")
+                for _input in inputs:
+                    for idiom in list(idioms.keys()):
+                        if idioms[idiom][_clue][index] == _input or _input not in idioms[idiom][_clue]:
+                            idioms.pop(idiom)
+
+    if entries_wrong[0].get():
+        inputs = entries_wrong[0].get().split(" ")
+        for _input in inputs:
+            for idiom in list(idioms.keys()):
+                if _input in idiom:
+                    idioms.pop(idiom)
+    for clue_index, _clue in [(1, "shengmu"), (2, "yunmu"), (3, "shengdiao")]:
+        if entries_wrong[clue_index].get():
+            inputs = entries_wrong[clue_index].get().split(" ")
+            for _input in inputs:
+                for idiom in list(idioms.keys()):
+                    if _input in idioms[idiom][_clue]:
+                        idioms.pop(idiom)
+
+    calculate_frequency()
+
+
+def clean_entries():
+    global idioms, original_idioms
+    for entries in entries_correct:
+        for _entry in entries:
+            _entry.delete(0, tk.END)
+    for entries in entries_exist:
+        for _entry in entries:
+            _entry.delete(0, tk.END)
+    for _entry in entries_wrong:
+        _entry.delete(0, tk.END)
+
+    idioms = original_idioms
+    calculate_frequency()
+    calculate_recommendations()
 
 
 if __name__ == "__main__":
@@ -167,10 +240,12 @@ if __name__ == "__main__":
 
     # 默认模式为标准模式
     with open("data/answers_noted.json", "r") as dataset:
-        idioms = json.load(dataset)
+        original_idioms = json.load(dataset)
 
     with open("data_infinite/answers_infinite_extra_noted.json", "r") as dataset:
         all_idioms = json.load(dataset)
+
+    idioms = original_idioms
 
     # 菜单，选择游戏模式
     menubar = tk.Menu(root)
@@ -197,38 +272,46 @@ if __name__ == "__main__":
     judge_frame_1 = tk.Frame(first_frame, bd=2, relief="groove")
     judge_frame_1.grid(row=0, column=1, padx=2, pady=2)
     tk.Label(judge_frame_1, text="正确").grid(row=0, columnspan=4, sticky="we")
+    entries_correct = []
     for i in range(4):
+        entries_correct.append([])
         for j in range(4):
             entry = ttk.Entry(judge_frame_1, width=4, style="Pixel.TEntry")
             entry.grid(row=i + 1, column=j)
+            entries_correct[i].append(entry)
 
     # 存在但位置错误情况
     judge_frame_2 = tk.Frame(first_frame, bd=2, relief="groove")
     judge_frame_2.grid(row=0, column=2, padx=2, pady=2)
     tk.Label(judge_frame_2, text="存在但位置错误").grid(row=0, columnspan=4, sticky="we")
+    entries_exist = []
     for i in range(4):
+        entries_exist.append([])
         for j in range(4):
             entry = ttk.Entry(judge_frame_2, width=10, style="Pixel.TEntry")
             entry.grid(row=i + 1, column=j)
+            entries_exist[i].append(entry)
 
     # 不存在
     judge_frame_3 = tk.Frame(first_frame, bd=2, relief="groove")
     judge_frame_3.grid(row=0, column=3, padx=2, pady=2)
     tk.Label(judge_frame_3, text="不存在").grid(row=0, columnspan=4, sticky="we")
+    entries_wrong = []
     for i in range(4):
         entry = ttk.Entry(judge_frame_3, width=60, style="Pixel.TEntry")
         entry.grid(row=i + 1)
+        entries_wrong.append(entry)
 
     # 第一部分的按钮框架
     first_button_frame = tk.Frame(first_frame)
     first_button_frame.grid(row=1, columnspan=4, padx=3, pady=3)
 
     # 第一部分的确定按钮
-    first_confirm_button = tk.Button(first_button_frame, width=5, text="确定", relief="groove")
+    first_confirm_button = tk.Button(first_button_frame, width=5, text="确定", relief="groove", command=collect_entries)
     first_confirm_button.grid(row=0, column=0, padx=3, pady=3)
 
     # 第一部分的重置按钮
-    first_clear_button = tk.Button(first_button_frame, width=5, text="重置", relief="groove")
+    first_clear_button = tk.Button(first_button_frame, width=5, text="重置", relief="groove", command=clean_entries)
     first_clear_button.grid(row=0, column=1, padx=3, pady=3)
 
     # 第二部分（语素筛选）框架
